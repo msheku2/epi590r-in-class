@@ -1,0 +1,94 @@
+---
+title: "gtsummary in quarto"
+format:
+  html:
+    theme: yeti
+execute:
+  echo: false
+  error: true
+---
+
+```{r}
+#| include: false
+library(tidyverse)
+library(gtsummary)
+nlsy_cols <- c("glasses", "eyesight", "sleep_wkdy", "sleep_wknd", 
+               "id", "nsibs", "samp", "race_eth", "sex", "region", 
+               "income", "res_1980", "res_2002", "age_bir")
+nlsy <- read_csv(here::here("data", "raw", "nlsy.csv"), 
+                 na = c("-1", "-2", "-3", "-4", "-5", "-998"),
+                 skip = 1, col_names = nlsy_cols) |> 
+  mutate(region_cat = factor(region, labels = c("Northeast", "North Central", "South", "West")),
+         sex_cat = factor(sex, labels = c("Male", "Female")),
+         race_eth_cat = factor(race_eth, labels = c("Hispanic", "Black", "Non-Black, Non-Hispanic")),
+         eyesight_cat = factor(eyesight, labels = c("Excellent", "Very good", "Good", "Fair", "Poor")),
+         glasses_cat = factor(glasses, labels = c("No", "Yes"))) 
+```
+
+# Customization of `tbl_summary()`
+
+```{r}
+#| label: tbl-descr
+#| tbl-cap: "Charatristics of study particpants"
+table1 <- tbl_summary(
+  nlsy,
+  by = sex_cat,
+  include = c(sex_cat, race_eth_cat, region_cat,
+              eyesight_cat, glasses, age_bir)) |> 
+  add_overall(last = TRUE)
+table1
+
+
+```
+
+@tbl-descr shows the characeteristcis of study participants
+
+```{r}
+nrow(nlsy)
+```
+
+# use this when writing a paper
+```{r}
+mean_sleep_wknd <- mean(nlsy$sleep_wknd, na.rm = TRUE)
+mean_sleep_wknd
+```
+
+
+The mean number of hours of sleep on weekends was `r mean(nlsy$sleep_wknd, na.rm = TRUE)`.
+
+
+```{r}
+median_sleep_wknd <- median(nlsy$sleep_wknd, na.rm = TRUE)
+median_sleep_wknd
+```
+
+The median number of hours of sleep on weekends was `r median(nlsy$sleep_wknd, na.rm = TRUE)`.
+
+# table with stats to extract values to paper
+```{r}
+#| label: tbl-2
+#| tbl-cap: "Descriptive statistics"
+table1 <- tbl_summary(
+  nlsy,
+  by = sex_cat,
+  include = c(sex_cat, race_eth_cat, region_cat,
+              eyesight_cat, glasses, age_bir, sleep_wknd)) |> 
+  add_overall(last = TRUE)
+table1
+median_hrs_sleep <- inline_text(table1, variable = "sleep_wknd", column = "stat_0")
+```
+
+The median and IQR are `r median_hrs_sleep`.
+
+
+
+```{r}
+inline_text(table1, variable = "region_cat", column = "stat_1", level = "South")
+
+n_f_south <- inline_text(table1, variable = "region_cat", 
+                         column = "stat_1", level = "South")
+
+```
+
+The proportion of female from the Southern region was (`r n_f_south`) 
+
